@@ -19,7 +19,7 @@
 
     function csv_wkt_to_uv3( cv_file, cv_delimiter, cv_color, cv_uv3 )
 
-        % Standard color map - Stolen form python (tab20)
+        % Standard color map - Stolen form python matplotlib (tab20b and tab20c)
         cv_cmap = uint8([
         0.19215686, 0.50980392, 0.74117647;
         0.41960784, 0.68235294, 0.83921569;
