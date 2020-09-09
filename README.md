@@ -40,6 +40,8 @@ The following images gives the available colors in the built-in colormap :
 </p>
 <br />
 
+The script is also able to associate an height value to the _WKT_ geometries. In addition to _WKT_, simply add a column in the exported table named "MSL" a use it to store the height values.
+
 A detailed documentation of specific file formats used by the tools of this suite can be found of the [format page](FORMAT.md).
 
 # Copyright and License
