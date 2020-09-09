@@ -48,6 +48,7 @@
 
         % create target table - add your own target in addition to WKT
         cv_target{1} = 'WKT';
+        cv_target{2} = 'MSL';
 
         % create input stream
         cv_stream = fopen( cv_file, 'r' );
@@ -76,6 +77,9 @@
 
         % decompose CSV header for target detection
         cv_header = strsplit( cv_header, cv_delimiter, 'CollapseDelimiters', false );
+
+        % initialise data pointer array
+        cv_data = cell( size( cv_target ) );
 
         % anylyze header for target detection
         for cv_j = 1 : size( cv_header, 2 )
@@ -107,6 +111,19 @@
             % extract and simplify WKT geometry
             cv_element = csv_wkt_to_uv3_readwkt( cv_split{1,cv_data{1}} );
 
+            % check for elevation
+            if ( cv_data{2} > 0 )
+
+                % read elevation %
+                cv_elevation = double( str2num( cv_split{1,cv_data{2}} ) );
+
+            else
+
+                % initialise elevation %
+                cv_elevation = 0;
+
+            end
+
             % process WKT elements
             for cv_i = 1 : size( cv_element, 2 )
 
@@ -114,7 +131,7 @@
                 display(cv_element{cv_i});
 
                 % export WKT in output UV3 stream
-                csv_wkt_to_uv3_export( cv_element{cv_i}, cv_color, cv_export );
+                csv_wkt_to_uv3_export( cv_element{cv_i}, cv_color, cv_elevation, cv_export );
 
             end
 
@@ -183,7 +200,7 @@
 
     end
 
-    function csv_wkt_to_uv3_export( cv_element, cv_color, cv_export )
+    function csv_wkt_to_uv3_export( cv_element, cv_color, cv_elevation, cv_export )
 
         % read simplified WKT geometry
         cv_value = sscanf( cv_element, '%lf' );
@@ -191,20 +208,36 @@
         % reshape geometry coordinates array (2 by n)
         cv_value = reshape( cv_value, [ 2, length( cv_value ) / 2 ] )';
 
-        % compute stand-alone line index array
-        cv_step = repelem( [1:size(cv_value,1)], 2 );
-
-        % compose and export linear primitives
-        for cv_i = 2 : length( cv_step ) - 1
+        % check vertex unicity - export as point
+        if ( size( cv_value, 1 ) == 1 )
 
             % compute coordinates array (converted in radian)
-            cv_pose = [ cv_value(cv_step(cv_i),1:2) * ( pi / 180. ), 0 ];
+            cv_pose = [ cv_value(1,1:2) * ( pi / 180. ), cv_elevation ];
 
             % export coordinates array (UV3)
             fwrite( cv_export, cv_pose, 'double' );
 
             % export primitive type and color (UV3)
-            fwrite( cv_export, [ 2, cv_color ], 'uint8' );
+            fwrite( cv_export, [ 1, cv_color ], 'uint8' );
+
+        else % export as lines
+
+            % compute stand-alone line index array
+            cv_step = repelem( [1:size(cv_value,1)], 2 );
+
+            % compose and export linear primitives
+            for cv_i = 2 : length( cv_step ) - 1
+
+                % compute coordinates array (converted in radian)
+                cv_pose = [ cv_value(cv_step(cv_i),1:2) * ( pi / 180. ), cv_elevation ];
+
+                % export coordinates array (UV3)
+                fwrite( cv_export, cv_pose, 'double' );
+
+                % export primitive type and color (UV3)
+                fwrite( cv_export, [ 2, cv_color ], 'uint8' );
+
+            end
 
         end
 
