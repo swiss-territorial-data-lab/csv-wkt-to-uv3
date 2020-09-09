@@ -139,6 +139,9 @@
         % extracted primitive index
         cv_k = 0;
 
+        % initialise cancel value %
+        cv_cancel = 1;
+
         % parsing simplified WKT geometry
         for cv_i = 1 : length( cv_wkt )
 
@@ -148,10 +151,13 @@
                 % push starting position
                 cv_push = cv_i;
 
+                % udpate cancel value %
+                cv_cancel = 0;
+
             end
 
             % parenthesis stack management
-            if ( cv_wkt(cv_i) == ')' )
+            if ( ( cv_wkt(cv_i) == ')' ) && ( cv_cancel == 0 ) )
 
                 % update primitive index
                 cv_k = cv_k + 1;
@@ -159,6 +165,9 @@
                 % push starting and ending position for the line/polygone strip
                 cv_token(cv_k,1) = cv_push + 1;
                 cv_token(cv_k,2) = cv_i - 1;
+
+                % udpate cancel value %
+                cv_cancel = 1;
 
             end
 
