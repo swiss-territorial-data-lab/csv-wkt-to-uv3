@@ -40,13 +40,15 @@ The following images gives the available colors in the built-in colormap :
 </p>
 <br />
 
-The script is also able to associate an height value to the _WKT_ geometries. In addition to _WKT_, simply add a column in the exported table named "MSL" a use it to store the height values.
+The script is also able to associate an height value to the _WKT_ geometries in two different ways : if the _WKT_ geometries come with an elevation (_Z_), it is used as _UV3_ third coordinate. If the _CSV_ comes with an _MSL_ column, the script interprets its values as height and use them as _UV3_ third coordinate, replacing the _WKT_ one if provided.
+
+A color can be specified for each _WKT_ geometry through _R_, _G_ and _B_ column. Each column as to provided the corresponding color component in [0,255] range. If a color component is not provided, the specified colormap index is used to assign the color component.
 
 A detailed documentation of specific file formats used by the tools of this suite can be found of the [format page](FORMAT.md).
 
 # Copyright and License
 
-**csv-wkt-to-uv3** - Nils Hamel <br >
+**csv-wkt-to-uv3** - Nils Hamel, Huriel Reichel <br >
 Copyright (c) 2020 STDL, Swiss Territorial Data Lab
 
 This program is licensed under the terms of the GNU GPLv3. Documentation and illustrations are licensed under the terms of the CC BY-NC-SA.

@@ -2,6 +2,7 @@
     % csv_wkt_to_uv3
     %
     %     Nils Hamel - nils.hamel@alumni.epfl.ch
+    %     Huriel Reichel
     %     Copyright (c) 2020 STDL, Swiss Territorial Data Lab
     %
     % This program is free software: you can redistribute it and/or modify
@@ -44,11 +45,17 @@
         ] * 255 );
 
         % Extract desired colormap - Modular condition to ensure index in 1:20
-        cv_color = cv_cmap( mod(cv_color-1,20)+1, 1:3 );
+        cv_cmap = cv_cmap( mod(cv_color-1,20)+1, 1:3 );
+
+        % initialise color array %
+        cv_color = zeros( 1, 3 );
 
         % create target table - add your own target in addition to WKT
         cv_target{1} = 'WKT';
         cv_target{2} = 'MSL';
+        cv_target{3} = 'R';
+        cv_target{4} = 'G';
+        cv_target{5} = 'B';
 
         % create input stream
         cv_stream = fopen( cv_file, 'r' );
@@ -101,12 +108,25 @@
 
         % start importing CSV line by line
         cv_line = fgetl( cv_stream );
-        
+
         % CSV analysis line by line
         while ( ischar(cv_line) )
 
             % decompose CSV line %
-            cv_split = strsplit( cv_line, ';', 'CollapseDelimiters', false );
+            cv_split = strsplit( cv_line, cv_delimiter, 'CollapseDelimiters', false );
+
+            % detect third dimension in WKT
+            if ( strfind( cv_split{1,cv_data{1}}, ' Z ' ) )
+
+                % three dimension vertex
+                cv_vertex = 3;
+
+            else
+
+                % two dimension vertex
+                cv_vertex = 2;
+
+            end
 
             % extract and simplify WKT geometry
             cv_element = csv_wkt_to_uv3_readwkt( cv_split{1,cv_data{1}} );
@@ -115,12 +135,51 @@
             if ( cv_data{2} > 0 )
 
                 % read elevation %
-                cv_elevation = double( str2num( cv_split{1,cv_data{2}} ) );
+                cv_elevation = double( str2num( strrep( cv_split{1,cv_data{2}}, '"', ' ' ) ) );
 
             else
 
                 % initialise elevation %
-                cv_elevation = 0;
+                cv_elevation = [];
+
+            end
+
+            % check for r
+            if ( cv_data{3} > 0 )
+
+                % read r %
+                cv_color(1) = double( str2num( strrep( cv_split{1,cv_data{3}}, '"', ' ' ) ) );
+
+            else
+
+                % initialise r %
+                cv_color(1) = cv_cmap(1);
+
+            end
+
+            % check for g
+            if ( cv_data{4} > 0 )
+
+                % read r %
+                cv_color(2) = double( str2num( strrep( cv_split{1,cv_data{4}}, '"', ' ' ) ) );
+
+            else
+
+                % initialise r %
+                cv_color(2) = cv_cmap(2);
+
+            end
+
+            % check for b
+            if ( cv_data{5} > 0 )
+
+                % read r %
+                cv_color(3) = double( str2num( strrep( cv_split{1,cv_data{5}}, '"', ' ' ) ) );
+
+            else
+
+                % initialise r %
+                cv_color(3) = cv_cmap(3);
 
             end
 
@@ -131,7 +190,7 @@
                 display(cv_element{cv_i});
 
                 % export WKT in output UV3 stream
-                csv_wkt_to_uv3_export( cv_element{cv_i}, cv_color, cv_elevation, cv_export );
+                csv_wkt_to_uv3_export( cv_element{cv_i}, cv_vertex, cv_color, cv_elevation, cv_export );
 
             end
 
@@ -200,22 +259,31 @@
 
     end
 
-    function csv_wkt_to_uv3_export( cv_element, cv_color, cv_elevation, cv_export )
+    function csv_wkt_to_uv3_export( cv_element, cv_vertex, cv_color, cv_elevation, cv_export )
 
         % read simplified WKT geometry
-        cv_value = sscanf( cv_element, '%lf' );
+        cv_pose = sscanf( cv_element, '%lf' );
 
-        % reshape geometry coordinates array (2 by n)
-        cv_value = reshape( cv_value, [ 2, length( cv_value ) / 2 ] )';
+        % reshape geometry coordinates array (2 or 3 by n)
+        cv_pose = reshape( cv_pose, [ cv_vertex, length( cv_pose ) / cv_vertex ] )';
+
+        % convert coordinates in radian
+        cv_pose(:,1) = cv_pose(:,1) * ( pi / 180. );
+        cv_pose(:,2) = cv_pose(:,2) * ( pi / 180. );
+
+        % check external elevation %
+        if ( isempty( cv_elevation ) == 0 )
+
+            % assign elevation %
+            cv_pose(:,3) = cv_elevation;
+
+        end
 
         % check vertex unicity - export as point
-        if ( size( cv_value, 1 ) == 1 )
-
-            % compute coordinates array (converted in radian)
-            cv_pose = [ cv_value(1,1:2) * ( pi / 180. ), cv_elevation ];
+        if ( size( cv_pose, 1 ) == 1 )
 
             % export coordinates array (UV3)
-            fwrite( cv_export, cv_pose, 'double' );
+            fwrite( cv_export, cv_pose(1,1:3), 'double' );
 
             % export primitive type and color (UV3)
             fwrite( cv_export, [ 1, cv_color ], 'uint8' );
@@ -223,16 +291,13 @@
         else % export as lines
 
             % compute stand-alone line index array
-            cv_step = repelem( [1:size(cv_value,1)], 2 );
+            cv_step = repelem( [1:size(cv_pose,1)], 2 );
 
             % compose and export linear primitives
-            for cv_i = 2 : length( cv_step ) - 1
-
-                % compute coordinates array (converted in radian)
-                cv_pose = [ cv_value(cv_step(cv_i),1:2) * ( pi / 180. ), cv_elevation ];
+            for cv_i = 2 : length( cv_pose ) - 1
 
                 % export coordinates array (UV3)
-                fwrite( cv_export, cv_pose, 'double' );
+                fwrite( cv_export, cv_pose(cv_step(cv_i),1:3), 'double' );
 
                 % export primitive type and color (UV3)
                 fwrite( cv_export, [ 2, cv_color ], 'uint8' );
