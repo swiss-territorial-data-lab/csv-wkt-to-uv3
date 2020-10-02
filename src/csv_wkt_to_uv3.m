@@ -56,6 +56,8 @@
         cv_target{3} = 'R';
         cv_target{4} = 'G';
         cv_target{5} = 'B';
+        cv_target{6} = 'X';
+        cv_target{7} = 'Y';
 
         % create input stream
         cv_stream = fopen( cv_file, 'r' );
@@ -115,21 +117,39 @@
             % decompose CSV line %
             cv_split = strsplit( cv_line, cv_delimiter, 'CollapseDelimiters', false );
 
-            % detect third dimension in WKT
-            if ( strfind( cv_split{1,cv_data{1}}, ' Z ' ) )
+            % check for WKT %
+            if ( cv_data{1} > 0 )
 
-                % three dimension vertex
-                cv_vertex = 3;
+                % detect third dimension in WKT
+                if ( strfind( cv_split{1,cv_data{1}}, ' Z ' ) )
+
+                    % three dimension vertex
+                    cv_vertex = 3;
+
+                else
+
+                    % two dimension vertex
+                    cv_vertex = 2;
+
+                end
+
+                % extract and simplify WKT geometry
+                cv_element = csv_wkt_to_uv3_readwkt( cv_split{1,cv_data{1}} );
 
             else
 
-                % two dimension vertex
-                cv_vertex = 2;
+                % check for external x, y %
+                if ( ( cv_data{6} > 0 ) && ( cv_data{7} > 0 ) )
+
+                    % create coordinates string %
+                    cv_element{1,1} = [ strrep( cv_split{1,cv_data{6}}, '"', ' ' ) " " strrep( cv_split{1,cv_data{7}}, '"', ' ' ) " 0" ];
+                
+                    % two dimension vertex
+                    cv_vertex = 3;
+
+                end
 
             end
-
-            % extract and simplify WKT geometry
-            cv_element = csv_wkt_to_uv3_readwkt( cv_split{1,cv_data{1}} );
 
             % check for elevation
             if ( cv_data{2} > 0 )
@@ -265,7 +285,7 @@
         cv_pose = sscanf( cv_element, '%lf' );
 
         % reshape geometry coordinates array (2 or 3 by n)
-        cv_pose = reshape( cv_pose, [ cv_vertex, length( cv_pose ) / cv_vertex ] )';
+        cv_pose = reshape( cv_pose, [ cv_vertex, length( cv_pose ) / cv_vertex ] )'
 
         % convert coordinates in radian
         cv_pose(:,1) = cv_pose(:,1) * ( pi / 180. );
