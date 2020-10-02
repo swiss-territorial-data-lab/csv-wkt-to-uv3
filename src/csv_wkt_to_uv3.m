@@ -285,7 +285,7 @@
         cv_pose = sscanf( cv_element, '%lf' );
 
         % reshape geometry coordinates array (2 or 3 by n)
-        cv_pose = reshape( cv_pose, [ cv_vertex, length( cv_pose ) / cv_vertex ] )'
+        cv_pose = reshape( cv_pose, [ cv_vertex, length( cv_pose ) / cv_vertex ] )';
 
         % convert coordinates in radian
         cv_pose(:,1) = cv_pose(:,1) * ( pi / 180. );
