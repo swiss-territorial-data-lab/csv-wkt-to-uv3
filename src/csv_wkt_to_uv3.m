@@ -288,8 +288,15 @@
         cv_pose = reshape( cv_pose, [ cv_vertex, length( cv_pose ) / cv_vertex ] )';
 
         % convert coordinates in radian
-        cv_pose(:,1) = cv_pose(:,1) * ( pi / 180. );
-        cv_pose(:,2) = cv_pose(:,2) * ( pi / 180. );
+        cv_pose(:,1) = cv_pose(:,1) * ( pi / 180. ) * 6000000;
+        cv_pose(:,2) = cv_pose(:,2) * ( pi / 180. ) * 6000000;
+
+        if ( size( cv_pose, 2 ) < 3 )
+
+            % adding third dimension %
+            cv_pose(:,3) = 0;
+
+        end
 
         % check external elevation %
         if ( isempty( cv_elevation ) == 0 )
