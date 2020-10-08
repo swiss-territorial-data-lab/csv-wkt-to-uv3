@@ -288,8 +288,8 @@
         cv_pose = reshape( cv_pose, [ cv_vertex, length( cv_pose ) / cv_vertex ] )';
 
         % convert coordinates in radian
-        cv_pose(:,1) = cv_pose(:,1) * ( pi / 180. ) * 6000000;
-        cv_pose(:,2) = cv_pose(:,2) * ( pi / 180. ) * 6000000;
+        cv_pose(:,1) = cv_pose(:,1) * ( pi / 180. );
+        cv_pose(:,2) = cv_pose(:,2) * ( pi / 180. );
 
         if ( size( cv_pose, 2 ) < 3 )
 
